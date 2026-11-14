@@ -1,6 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <title>Lift Log</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0f1216">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lift Log">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap">
@@ -97,6 +104,8 @@
   .toast.show { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
+</head>
+<body>
 
 <header>
   <h1>Lift Log</h1>
@@ -252,23 +261,7 @@
   function groupBy(arr, fn) { const m = new Map(); for (const x of arr) { const k = fn(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }
 
   // ---------- storage adapters ----------
-  // Shared store (claude.ai db): profiles/<pid> = {name, unit, rest, exercises, lastDate, created}
-  //                              profiles/<pid>/days/<YYYY-MM-DD> = {date, sets:[...]}
-  function dbStore(db) {
-    return {
-      shared: true,
-      subscribeProfiles(cb, err) {
-        return db.collection('profiles').onSnapshot(s => cb(Object.fromEntries(s.docs.map(d => [d.id, d.data()])), s.metadata.fromCache), err);
-      },
-      subscribeDays(pid, cb, err) {
-        return db.collection('profiles/' + pid + '/days').onSnapshot(s => cb(Object.fromEntries(s.docs.map(d => [d.id, (d.data().sets || [])]))), err);
-      },
-      setProfile: (pid, data) => db.doc('profiles/' + pid).set(data),
-      updateProfile: (pid, patch) => db.doc('profiles/' + pid).update(patch),
-      saveDay: (pid, date, sets) => sets.length ? db.doc('profiles/' + pid + '/days/' + date).set({ date, sets }) : db.doc('profiles/' + pid + '/days/' + date).delete()
-    };
-  }
-  // Fallback when no shared store is available (opened as a plain file, or signed out): this browser only.
+  // Everything is kept in this browser on this device. Each person has their own profile and log.
   function localStore() {
     const KEY = 'liftlog.v2';
     let data; try { data = JSON.parse(lsGet(KEY)) || {}; } catch (e) { data = {}; }
@@ -297,9 +290,7 @@
     return p;
   }
   function writeFailed(e) {
-    if (e && e.code === 'invalid_argument') toast("You can view this log but not change it. Ask the owner for edit access.");
-    else if (e && e.code === 'quota_exceeded') toast('Storage is full. Export a backup and remove old days.');
-    else toast("Couldn't save. Check your connection and try again.");
+    toast("Couldn't save. This browser may be blocking storage (private mode?).");
   }
 
   // ---------- state ----------
@@ -592,9 +583,7 @@
   function renderSettings() {
     $('#exChips').innerHTML = exercises().map((e, i) => '<button class="chip ' + (e.hidden ? '' : 'on') + '" data-ex="' + i + '">' + esc(e.name) + '</button>').join('');
     document.querySelectorAll('[data-unit]').forEach(b => b.classList.toggle('on', b.dataset.unit === unit()));
-    $('#dataNote').textContent = store && store.shared
-      ? 'Your workouts are saved online with this page, so you can open it on any device and pick your name. Export a backup now and then.'
-      : 'Your workouts are saved in this browser only. Export a backup now and then, or to move to another device.';
+    $('#dataNote').textContent = 'Your workouts are saved on this device, in this browser only. Clearing browser data erases them, so export a backup now and then. To move to another device, export a backup here and import it there.';
   }
   $('#exChips').addEventListener('click', e => {
     const b = e.target.closest('[data-ex]'); if (!b) return;
@@ -613,14 +602,7 @@
   $('#addEx').addEventListener('click', addExercise);
   $('#newEx').addEventListener('keydown', e => { if (e.key === 'Enter') addExercise(); });
 
-  let downloads = null;
-  async function download(name, text, type) {
-    if (downloads) {
-      try { await downloads.save({ filename: name, data: new Blob([text], { type }) }); }
-      catch (e) { if (!e || e.code !== 'declined') toast("Couldn't export the file"); }
-      return;
-    }
-    if (window.claude) { toast('Export is not available here'); return; }
+  function download(name, text, type) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -693,15 +675,8 @@
   // ---------- start ----------
   async function start() {
     show('who');
-    let db = null;
-    if (window.claude && claude.use) {
-      try { db = await claude.use('db'); } catch (e) {}
-      try { downloads = await claude.use('downloads'); } catch (e) {}
-    }
-    store = db ? dbStore(db) : localStore();
-    $('#storeNote').textContent = store.shared
-      ? 'Everyone who opens this page sees the same list of names. Each person’s workouts are kept separately under their name.'
-      : 'Saved in this browser only. Open the shared link while signed in to claude.ai to keep workouts across devices.';
+    store = localStore();
+    $('#storeNote').textContent = 'Saved on this device only. Each person who uses this device gets their own log under their name.';
     const slow = setTimeout(() => {
       if (!profilesLoaded) { $('#loading').hidden = false; $('#loading').textContent = "Still connecting. Names will appear once the connection is back."; }
     }, 10000);
@@ -724,3 +699,5 @@
   start();
 })();
 </script>
+</body>
+</html>
