@@ -1,105 +1,141 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#16181d">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Lift Log</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap">
 <style>
+  /* Layout: one narrow column of workout cards, sticky header with the lifter's name, tab bar pinned to the bottom like a phone app. */
   :root {
-    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #eef0f3; --text: #16181d;
-    --muted: #646b78; --border: #dde1e7; --accent: #2f6fed; --accent-text: #ffffff;
-    --good: #138a52; --danger: #c93838; --radius: 12px;
+    --bg: #f3f4f6; --surface: #ffffff; --surface-2: #e9ecf1; --text: #15191f;
+    --muted: #5d6573; --border: #d9dde4; --accent: #1f5bd8; --accent-text: #ffffff;
+    --good: #12804c; --danger: #c13434;
+    --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+    --font-body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --radius: 12px;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #101216; --surface: #181b21; --surface-2: #22262e; --text: #e9ebef;
-      --muted: #9aa2b1; --border: #2c313b; --accent: #5b8ff9; --accent-text: #0b0d10;
-      --good: #3fc584; --danger: #f06c6c;
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216; --surface: #171b21; --surface-2: #222730; --text: #e8ebf0;
+      --muted: #98a1b0; --border: #2b313b; --accent: #6b9bff; --accent-text: #0a0d12;
+      --good: #43c487; --danger: #f07070; color-scheme: dark;
     }
   }
+  :root[data-theme="dark"] {
+    --bg: #0f1216; --surface: #171b21; --surface-2: #222730; --text: #e8ebf0;
+    --muted: #98a1b0; --border: #2b313b; --accent: #6b9bff; --accent-text: #0a0d12;
+    --good: #43c487; --danger: #f07070; color-scheme: dark;
+  }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  body { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
-  header { position: sticky; top: 0; z-index: 5; background: var(--bg);
-    padding: calc(12px + env(safe-area-inset-top)) 16px 10px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  header h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
-  main { max-width: 640px; margin: 0 auto; padding: 16px; }
-  nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 5; display: flex;
-    background: var(--surface); border-top: 1px solid var(--border);
-    padding-bottom: env(safe-area-inset-bottom); }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 var(--font-body);
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+  header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+    padding-block: 12px 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header h1 { font-family: var(--font-display); font-size: 26px; font-weight: 700; margin: 0; letter-spacing: 0.01em; text-transform: uppercase; }
+  main { max-width: 640px; margin: 0 auto; padding-block: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 5; display: flex; background: var(--surface);
+    border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
   nav button { flex: 1; background: none; border: 0; color: var(--muted); padding: 12px 4px 14px;
     font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
   nav button[aria-current="page"] { color: var(--accent); }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px; margin-bottom: 12px; }
+  nav.locked button { opacity: .4; pointer-events: none; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
   .row { display: flex; gap: 8px; align-items: center; }
+  .wrap { flex-wrap: wrap; }
   .between { justify-content: space-between; }
   .muted { color: var(--muted); }
   .small { font-size: 13px; }
-  h2 { font-size: 17px; margin: 0 0 8px; }
+  h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin: 0 0 8px; text-wrap: balance; }
   h3 { font-size: 15px; margin: 0; }
   label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
-  input, select { font: inherit; color: var(--text); background: var(--surface-2);
-    border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%; min-width: 0; }
-  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input, select { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; width: 100%; min-width: 0; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .btn { font: inherit; font-weight: 600; border-radius: 10px; padding: 10px 14px; cursor: pointer;
     border: 1px solid var(--border); background: var(--surface-2); color: var(--text); white-space: nowrap; }
   .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
   .btn.ghost { background: none; border-color: transparent; color: var(--muted); padding: 6px 8px; }
   .btn.danger { color: var(--danger); }
   .btn:disabled { opacity: .5; cursor: default; }
-  .btn.block { width: 100%; }
+  .who { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 5px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; max-width: 50vw; }
+  .who span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-text);
+    display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; flex: none; }
+  .people { display: grid; gap: 8px; }
+  .person { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px; font: inherit;
+    background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+  .person .avatar { width: 40px; height: 40px; font-size: 15px; }
+  .person b { display: block; font-size: 17px; }
+  .person.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .table-wrap { overflow-x: auto; }
   .sets { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
   .sets td, .sets th { padding: 6px 4px; text-align: left; border-top: 1px solid var(--border); white-space: nowrap; }
-  .sets th { font-size: 12px; color: var(--muted); font-weight: 600; border-top: 0; }
+  .sets th { font-size: 12px; color: var(--muted); font-weight: 600; border-top: 0; text-transform: uppercase; letter-spacing: .04em; }
   .sets td:last-child { text-align: right; width: 1%; }
-  .pr { color: var(--good); font-size: 12px; font-weight: 700; margin-left: 6px; }
+  .pr { color: var(--good); font-size: 11px; font-weight: 700; margin-left: 6px; letter-spacing: .04em; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
-  .stat { background: var(--surface-2); border-radius: 10px; padding: 10px; }
-  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .stat { background: var(--surface-2); border-radius: 10px; padding: 10px; min-width: 0; }
+  .stat b { display: block; font-family: var(--font-display); font-size: 24px; font-variant-numeric: tabular-nums; }
   .stat span { font-size: 12px; color: var(--muted); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 999px; cursor: pointer;
     border: 1px solid var(--border); background: var(--surface); color: var(--text); }
   .chip.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-  .empty { text-align: center; padding: 32px 16px; color: var(--muted); }
-  .timer { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .empty { text-align: center; padding: 28px 16px; color: var(--muted); }
+  .timer { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; color: var(--muted); }
   svg.chart { width: 100%; height: auto; display: block; }
-  svg.chart text { fill: var(--muted); font-size: 11px; }
-  .hidden { display: none !important; }
-  .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-    background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 999px; font-size: 14px;
-    opacity: 0; transition: opacity .2s; pointer-events: none; }
+  svg.chart text { fill: var(--muted); font-size: 11px; font-family: var(--font-body); }
+  .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 999px; font-size: 14px; max-width: calc(100vw - 32px);
+    opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
   .toast.show { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
-</head>
-<body>
+
 <header>
   <h1>Lift Log</h1>
   <div class="row">
-    <span id="timer" class="timer muted small hidden"></span>
-    <button class="btn ghost small" id="unitBtn" title="Switch units">lb</button>
+    <span id="timer" class="timer" hidden></span>
+    <span id="undoSlot"></span>
+    <button class="who" id="whoBtn" hidden title="Switch lifter"><span class="avatar" id="whoAvatar"></span><span id="whoName"></span></button>
   </div>
 </header>
 
 <main>
+  <!-- WHO -->
+  <section id="view-who" hidden>
+    <h2>Who's lifting?</h2>
+    <p class="muted small" style="margin-top:0">Pick your name to see and log your own workouts.</p>
+    <div id="loading" class="empty">Loading lifters…</div>
+    <div class="people" id="peopleList"></div>
+    <div class="card" style="margin-top:12px">
+      <label for="newName">New here? Add your name</label>
+      <div class="row">
+        <input id="newName" placeholder="Your name" maxlength="40" autocomplete="off">
+        <button class="btn primary" id="addName">Add</button>
+      </div>
+    </div>
+    <p id="storeNote" class="muted small"></p>
+  </section>
+
   <!-- LOG -->
-  <section id="view-log">
+  <section id="view-log" hidden>
     <div class="card">
       <div class="row between">
-        <h2 id="todayLabel">Today</h2>
+        <h2 id="todayLabel" style="margin:0">Today</h2>
         <input type="date" id="logDate" style="width:auto">
       </div>
-      <label for="exSelect">Exercise</label>
+      <label for="exSelect" style="margin-top:8px">Exercise</label>
       <select id="exSelect"></select>
-      <div id="customWrap" class="hidden" style="margin-top:8px">
+      <div id="customWrap" hidden style="margin-top:8px">
         <label for="customEx">Custom exercise name</label>
-        <input id="customEx" placeholder="e.g. Goblet Squat" autocomplete="off">
+        <input id="customEx" placeholder="e.g. Goblet Squat" autocomplete="off" maxlength="60">
         <p class="muted small" style="margin:6px 0 0">It's added to your exercise list when you log its first set.</p>
       </div>
       <p id="lastTime" class="muted small" style="margin:8px 0 0"></p>
@@ -110,7 +146,7 @@
           <input id="rIn" type="number" inputmode="numeric" step="1" min="1" placeholder="0"></div>
         <button class="btn primary" id="addSet">Add set</button>
       </div>
-      <div class="row" style="margin-top:8px; flex-wrap:wrap">
+      <div class="row wrap" style="margin-top:10px">
         <span class="muted small">Rest timer:</span>
         <button class="chip" data-rest="60">1:00</button>
         <button class="chip" data-rest="90">1:30</button>
@@ -123,12 +159,10 @@
   </section>
 
   <!-- HISTORY -->
-  <section id="view-history" class="hidden">
-    <div id="historyList"></div>
-  </section>
+  <section id="view-history" hidden><div id="historyList"></div></section>
 
   <!-- PROGRESS -->
-  <section id="view-progress" class="hidden">
+  <section id="view-progress" hidden>
     <div class="card">
       <label for="progEx">Exercise</label>
       <select id="progEx"></select>
@@ -143,45 +177,52 @@
     <div class="card">
       <h2>Rep records</h2>
       <p class="muted small" style="margin:0">Heaviest weight lifted for each rep count.</p>
-      <div id="repPRs"></div>
+      <div class="table-wrap" id="repPRs"></div>
     </div>
   </section>
 
-  <!-- EXERCISES / SETTINGS -->
-  <section id="view-settings" class="hidden">
+  <!-- SETTINGS -->
+  <section id="view-settings" hidden>
     <div class="card">
       <h2>Exercises</h2>
       <div class="row" style="margin-bottom:10px">
-        <input id="newEx" placeholder="Add a custom exercise">
+        <input id="newEx" placeholder="Add a custom exercise" maxlength="60">
         <button class="btn" id="addEx">Add</button>
       </div>
       <div class="chips" id="exChips"></div>
-      <p class="muted small" style="margin:10px 0 0">Tap an exercise to hide or show it in the picker.</p>
+      <p class="muted small" style="margin:10px 0 0">Tap an exercise to hide or show it in your picker.</p>
+    </div>
+    <div class="card">
+      <h2>Units</h2>
+      <div class="chips">
+        <button class="chip" data-unit="lb">Pounds (lb)</button>
+        <button class="chip" data-unit="kg">Kilograms (kg)</button>
+      </div>
+      <p class="muted small" style="margin:8px 0 0">Changes the label for new sets. Sets you already logged keep their own unit.</p>
     </div>
     <div class="card">
       <h2>Your data</h2>
-      <p class="muted small" style="margin-top:0">Everything is saved in this browser on this device. Export a backup now and then, or to move to another device.</p>
-      <div class="row" style="flex-wrap:wrap">
+      <p class="muted small" id="dataNote" style="margin-top:0"></p>
+      <div class="row wrap">
         <button class="btn" id="exportJson">Export backup</button>
         <button class="btn" id="exportCsv">Export CSV</button>
-        <label class="btn" style="margin:0;color:var(--text);font-size:16px">Import backup
-          <input type="file" id="importFile" accept="application/json" class="hidden"></label>
+        <label class="btn" for="importFile" style="margin:0;color:var(--text);font-size:16px">Import backup</label>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
       </div>
     </div>
   </section>
 </main>
 
-<nav>
-  <button data-view="log" aria-current="page">Log</button>
+<nav id="nav" class="locked">
+  <button data-view="log">Log</button>
   <button data-view="history">History</button>
   <button data-view="progress">Progress</button>
   <button data-view="settings">Exercises</button>
 </nav>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 (() => {
-  const KEY = 'liftlog.v1';
   const DEFAULT_EXERCISES = [
     'Back Squat', 'Front Squat', 'Bench Press', 'Incline Bench Press', 'Deadlift',
     'Romanian Deadlift', 'Overhead Press', 'Barbell Row', 'Pull-up', 'Chin-up',
@@ -190,21 +231,8 @@
     'Power Clean', 'Barbell Curl', 'Dumbbell Curl', 'Triceps Pushdown', 'Skull Crusher',
     'Lateral Raise', 'Face Pull', 'Calf Raise', 'Shrug'
   ];
-
-  // ---------- state ----------
-  const blank = () => ({ unit: 'lb', rest: 90, exercises: DEFAULT_EXERCISES.map(n => ({ name: n, hidden: false })), sets: [] });
-  let state = load();
-  function load() {
-    try {
-      const s = JSON.parse(localStorage.getItem(KEY));
-      if (s && Array.isArray(s.sets) && Array.isArray(s.exercises)) return { ...blank(), ...s };
-    } catch (e) {}
-    return blank();
-  }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { toast('Could not save — storage unavailable'); }
-  }
+  const LAST_PERSON_KEY = 'liftlog.person';
+  const NEW = '__new__';
 
   // ---------- helpers ----------
   const $ = s => document.querySelector(s);
@@ -213,53 +241,172 @@
   const fmtDate = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   const fmtShort = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const num = n => (Math.round(n * 10) / 10).toLocaleString();
-  // Epley estimate; a single rep is the 1RM itself.
-  const e1rm = (w, r) => r === 1 ? w : w * (1 + r / 30);
-  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  const visibleExercises = () => state.exercises.filter(e => !e.hidden).map(e => e.name);
-  const setsFor = ex => state.sets.filter(s => s.exercise === ex);
-  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); }
+  const e1rm = (w, r) => r === 1 ? w : w * (1 + r / 30); // Epley
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const initials = n => n.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+  const clean = s => s.trim().replace(/\s+/g, ' ');
+  const isDate = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
+  const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
   function groupBy(arr, fn) { const m = new Map(); for (const x of arr) { const k = fn(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }
 
-  // Is this set a weight PR for its rep count (strictly heavier than any earlier set)?
-  function isPR(set) {
-    return !state.sets.some(s => s.id !== set.id && s.exercise === set.exercise && s.reps >= set.reps &&
+  // ---------- storage adapters ----------
+  // Shared store (claude.ai db): profiles/<pid> = {name, unit, rest, exercises, lastDate, created}
+  //                              profiles/<pid>/days/<YYYY-MM-DD> = {date, sets:[...]}
+  function dbStore(db) {
+    return {
+      shared: true,
+      subscribeProfiles(cb, err) {
+        return db.collection('profiles').onSnapshot(s => cb(Object.fromEntries(s.docs.map(d => [d.id, d.data()])), s.metadata.fromCache), err);
+      },
+      subscribeDays(pid, cb, err) {
+        return db.collection('profiles/' + pid + '/days').onSnapshot(s => cb(Object.fromEntries(s.docs.map(d => [d.id, (d.data().sets || [])]))), err);
+      },
+      setProfile: (pid, data) => db.doc('profiles/' + pid).set(data),
+      updateProfile: (pid, patch) => db.doc('profiles/' + pid).update(patch),
+      saveDay: (pid, date, sets) => sets.length ? db.doc('profiles/' + pid + '/days/' + date).set({ date, sets }) : db.doc('profiles/' + pid + '/days/' + date).delete()
+    };
+  }
+  // Fallback when no shared store is available (opened as a plain file, or signed out): this browser only.
+  function localStore() {
+    const KEY = 'liftlog.v2';
+    let data; try { data = JSON.parse(lsGet(KEY)) || {}; } catch (e) { data = {}; }
+    data.profiles = data.profiles || {}; data.days = data.days || {};
+    const pl = new Set(), dl = new Map();
+    const persist = () => {
+      lsSet(KEY, JSON.stringify(data));
+      pl.forEach(cb => cb(structuredClone(data.profiles), false));
+      dl.forEach((cbs, pid) => cbs.forEach(cb => cb(structuredClone(data.days[pid] || {}))));
+    };
+    return {
+      shared: false,
+      subscribeProfiles(cb) { pl.add(cb); setTimeout(() => cb(structuredClone(data.profiles), false)); return () => pl.delete(cb); },
+      subscribeDays(pid, cb) { if (!dl.has(pid)) dl.set(pid, new Set()); dl.get(pid).add(cb); setTimeout(() => cb(structuredClone(data.days[pid] || {}))); return () => dl.get(pid).delete(cb); },
+      async setProfile(pid, d) { data.profiles[pid] = structuredClone(d); persist(); },
+      async updateProfile(pid, patch) { Object.assign(data.profiles[pid], structuredClone(patch)); persist(); },
+      async saveDay(pid, date, sets) { data.days[pid] = data.days[pid] || {}; if (sets.length) data.days[pid][date] = structuredClone(sets); else delete data.days[pid][date]; persist(); }
+    };
+  }
+
+  // One write at a time per document.
+  const chains = new Map();
+  function queued(key, fn) {
+    const p = (chains.get(key) || Promise.resolve()).then(fn, fn);
+    chains.set(key, p.catch(() => {}));
+    return p;
+  }
+  function writeFailed(e) {
+    if (e && e.code === 'invalid_argument') toast("You can view this log but not change it. Ask the owner for edit access.");
+    else if (e && e.code === 'quota_exceeded') toast('Storage is full. Export a backup and remove old days.');
+    else toast("Couldn't save. Check your connection and try again.");
+  }
+
+  // ---------- state ----------
+  let store = null;
+  let profiles = {};           // pid -> profile
+  let profilesLoaded = false;
+  let pid = null;              // current lifter
+  let days = {};               // date -> sets[] for current lifter
+  let unsubDays = null;
+  let view = 'who';
+  const me = () => profiles[pid] || null;
+  const unit = () => (me() && me().unit) || 'lb';
+  const restSecs = () => (me() && me().rest != null) ? me().rest : 90;
+  const exercises = () => (me() && Array.isArray(me().exercises)) ? me().exercises : DEFAULT_EXERCISES.map(n => ({ name: n, hidden: false }));
+  const visibleExercises = () => exercises().filter(e => !e.hidden).map(e => e.name);
+  const allSets = () => Object.entries(days).flatMap(([date, ss]) => ss.map(s => ({ ...s, date })));
+  const setsFor = ex => allSets().filter(s => s.exercise === ex);
+
+  // A set is a record when no earlier set of the same lift moved at least as much weight for at least as many reps.
+  function isPR(set, sets) {
+    return !sets.some(s => s.id !== set.id && s.exercise === set.exercise && s.reps >= set.reps &&
       s.weight >= set.weight && (s.date < set.date || (s.date === set.date && s.t < set.t)));
   }
 
-  // ---------- navigation ----------
-  let view = 'log';
-  document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
-  function show(v) {
-    view = v;
-    document.querySelectorAll('nav button').forEach(b => b.dataset.view === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-    ['log', 'history', 'progress', 'settings'].forEach(x => $('#view-' + x).classList.toggle('hidden', x !== v));
+  function updateMe(patch) {
+    if (!pid) return;
+    const id = pid;
+    profiles[id] = { ...profiles[id], ...patch }; render();
+    queued('p/' + id, () => store.updateProfile(id, patch)).catch(writeFailed);
+  }
+  function writeDay(date, sets) {
+    const id = pid, prev = days[date];
+    days = { ...days };
+    if (sets.length) days[date] = sets; else delete days[date];
     render();
-    window.scrollTo(0, 0);
+    return queued('d/' + id + '/' + date, () => store.saveDay(id, date, sets)).catch(e => {
+      if (pid === id) { days = { ...days }; if (prev) days[date] = prev; else delete days[date]; render(); }
+      writeFailed(e); throw e;
+    });
   }
 
-  // ---------- units ----------
-  $('#unitBtn').addEventListener('click', () => {
-    state.unit = state.unit === 'lb' ? 'kg' : 'lb';
-    save(); render(); toast('Units: ' + state.unit + ' (existing numbers unchanged)');
-  });
+  // ---------- people ----------
+  function selectPerson(id) {
+    if (!profiles[id]) return;
+    pid = id; lsSet(LAST_PERSON_KEY, id);
+    days = {};
+    if (unsubDays) unsubDays();
+    unsubDays = store.subscribeDays(id, d => { if (pid === id) { days = d; render(); } }, () => toast("Couldn't load workouts. Reopen the page to try again."));
+    $('#nav').classList.remove('locked');
+    $('#logDate').value = todayStr();
+    $('#exSelect').value = '';
+    show('log');
+  }
+  function renderWho() {
+    const ids = Object.keys(profiles).sort((a, b) => profiles[a].name.localeCompare(profiles[b].name));
+    $('#loading').hidden = profilesLoaded || ids.length > 0;
+    $('#peopleList').innerHTML = ids.map(id => {
+      const p = profiles[id];
+      return '<button class="person' + (id === pid ? ' on' : '') + '" data-person="' + esc(id) + '"><span class="avatar">' + esc(initials(p.name)) +
+        '</span><span><b>' + esc(p.name) + '</b><span class="muted small">' + (p.lastDate ? 'Last workout ' + fmtShort(p.lastDate) : 'No workouts yet') + '</span></span></button>';
+    }).join('');
+    if (profilesLoaded && !ids.length) $('#peopleList').innerHTML = '<div class="empty">No lifters yet. Add your name below to get started.</div>';
+  }
+  async function addPerson() {
+    const name = clean($('#newName').value).slice(0, 40);
+    if (!name) { toast('Type your name first'); return; }
+    const existing = Object.keys(profiles).find(id => profiles[id].name.toLowerCase() === name.toLowerCase());
+    if (existing) { $('#newName').value = ''; selectPerson(existing); toast('Welcome back, ' + profiles[existing].name); return; }
+    const id = uid();
+    const profile = { name, unit: 'lb', rest: 90, exercises: DEFAULT_EXERCISES.map(n => ({ name: n, hidden: false })), created: Date.now() };
+    $('#addName').disabled = true;
+    try {
+      await store.setProfile(id, profile);
+      profiles = { ...profiles, [id]: profiles[id] || profile };
+      $('#newName').value = '';
+      selectPerson(id); toast('Welcome, ' + name);
+    } catch (e) { writeFailed(e); }
+    $('#addName').disabled = false;
+  }
+  $('#addName').addEventListener('click', addPerson);
+  $('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') addPerson(); });
+  $('#whoBtn').addEventListener('click', () => show('who'));
+
+  // ---------- navigation ----------
+  document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
+  function show(v) {
+    if (v !== 'who' && !me()) v = 'who';
+    view = v;
+    document.querySelectorAll('nav button').forEach(b => b.dataset.view === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+    ['who', 'log', 'history', 'progress', 'settings'].forEach(x => { $('#view-' + x).hidden = x !== v; });
+    render(); window.scrollTo(0, 0);
+  }
 
   // ---------- log ----------
-  $('#logDate').value = todayStr();
-  $('#logDate').addEventListener('change', render);
-  const NEW = '__new__';
+  $('#logDate').addEventListener('change', () => { if (!isDate($('#logDate').value)) $('#logDate').value = todayStr(); render(); });
   $('#exSelect').addEventListener('change', () => {
     syncCustom(); prefill(); renderLastTime();
     if ($('#exSelect').value === NEW) $('#customEx').focus();
   });
-  function syncCustom() { $('#customWrap').classList.toggle('hidden', $('#exSelect').value !== NEW); }
+  function syncCustom() { $('#customWrap').hidden = $('#exSelect').value !== NEW; }
   $('#customEx').addEventListener('keydown', e => { if (e.key === 'Enter') $('#wIn').focus(); });
-  // Name for the set being logged: the picked exercise, or the typed custom one (matching an existing name if it already exists).
+  // The lift being logged: the picked one, or the typed custom name (reusing an existing entry when the name matches).
   function chosenExercise() {
     if ($('#exSelect').value !== NEW) return $('#exSelect').value;
-    const typed = $('#customEx').value.trim().replace(/\s+/g, ' ');
+    const typed = clean($('#customEx').value).slice(0, 60);
     if (!typed) return '';
-    const existing = state.exercises.find(e => e.name.toLowerCase() === typed.toLowerCase());
+    const existing = exercises().find(e => e.name.toLowerCase() === typed.toLowerCase());
     return existing ? existing.name : typed;
   }
   function prefill() {
@@ -277,106 +424,109 @@
     $('#lastTime').textContent = 'Last time (' + fmtShort(last) + '): ' + sets.map(s => num(s.weight) + '×' + s.reps).join(', ');
   }
   function addSet() {
+    if (!me()) return;
     const w = parseFloat($('#wIn').value), r = parseInt($('#rIn').value, 10);
     const ex = chosenExercise();
     if (!ex) { toast('Enter a name for your custom exercise'); $('#customEx').focus(); return; }
     if (!(w >= 0) || !(r >= 1)) { toast('Enter a weight and at least 1 rep'); return; }
-    const known = state.exercises.find(e => e.name === ex);
-    if (!known) state.exercises.push({ name: ex, hidden: false });
-    else known.hidden = false;
-    if ($('#exSelect').value === NEW) {
-      $('#customEx').value = '';
-      render(); $('#exSelect').value = ex; syncCustom();
-    }
-    const set = { id: uid(), date: $('#logDate').value || todayStr(), exercise: ex, weight: w, reps: r, unit: state.unit, t: Date.now() };
-    state.sets.push(set); save();
-    if (!known) toast('Set added — ' + ex + ' saved to your exercises');
-    else if (isPR(set) && setsFor(set.exercise).length > 1) toast('New ' + r + '-rep record! 🎉'); else toast('Set added');
-    startRest(); render();
+    const date = isDate($('#logDate').value) ? $('#logDate').value : todayStr();
+
+    const list = exercises().map(e => ({ ...e }));
+    const known = list.find(e => e.name === ex);
+    const patch = {};
+    if (!known) { list.push({ name: ex, hidden: false }); patch.exercises = list; }
+    else if (known.hidden) { known.hidden = false; patch.exercises = list; }
+    if (!me().lastDate || date > me().lastDate) patch.lastDate = date;
+    if (Object.keys(patch).length) updateMe(patch);
+    if ($('#exSelect').value === NEW) { $('#customEx').value = ''; render(); $('#exSelect').value = ex; syncCustom(); }
+
+    const set = { id: uid(), exercise: ex, weight: w, reps: r, unit: unit(), t: Date.now() };
+    const before = allSets();
+    writeDay(date, [...(days[date] || []), set]).then(() => {
+      if (!known) toast('Set added. ' + ex + ' is saved to your exercises');
+      else if (before.some(s => s.exercise === ex) && isPR({ ...set, date }, [...before, { ...set, date }])) toast('New ' + r + '-rep record!');
+      else toast('Set added');
+    }, () => {});
+    startRest();
   }
   $('#addSet').addEventListener('click', addSet);
   [$('#wIn'), $('#rIn')].forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') addSet(); }));
 
-  function deleteSet(id) {
-    const i = state.sets.findIndex(s => s.id === id);
-    if (i < 0) return;
-    const [removed] = state.sets.splice(i, 1); save(); render();
-    toast('Set deleted'); showUndo(removed);
+  function deleteSet(date, id) {
+    const sets = days[date] || [];
+    const removed = sets.find(s => s.id === id); if (!removed) return;
+    writeDay(date, sets.filter(s => s.id !== id)).then(() => { toast('Set deleted'); showUndo(date, removed); }, () => {});
   }
-  function showUndo(removed) {
-    const btn = $('#unitBtn');
-    document.querySelectorAll('.undo').forEach(u => u.remove());
+  function showUndo(date, removed) {
+    const slot = $('#undoSlot'); slot.innerHTML = '';
     const undo = document.createElement('button');
-    undo.className = 'btn small undo'; undo.textContent = 'Undo';
-    undo.onclick = () => { state.sets.push(removed); save(); render(); undo.remove(); };
-    btn.parentElement.insertBefore(undo, btn);
-    setTimeout(() => undo.remove(), 5000);
+    undo.className = 'btn small undo'; undo.style.padding = '6px 10px'; undo.textContent = 'Undo';
+    const owner = pid;
+    undo.onclick = () => { slot.innerHTML = ''; if (pid === owner) writeDay(date, [...(days[date] || []), removed].sort((a, b) => a.t - b.t)).catch(() => {}); };
+    slot.appendChild(undo);
+    clearTimeout(showUndo.t); showUndo.t = setTimeout(() => { slot.innerHTML = ''; }, 6000);
   }
 
-  function setsTable(sets, deletable) {
-    return '<table class="sets"><tr><th>Set</th><th>Weight</th><th>Reps</th><th>Est. 1RM</th><th></th></tr>' +
-      sets.map((s, i) => '<tr><td>' + (i + 1) + '</td><td>' + num(s.weight) + ' ' + esc(s.unit || state.unit) +
-        (isPR(s) ? '<span class="pr">PR</span>' : '') + '</td><td>' + s.reps + '</td><td class="muted">' + num(e1rm(s.weight, s.reps)) +
-        '</td><td>' + (deletable ? '<button class="btn ghost danger small" data-del="' + s.id + '" aria-label="Delete set">✕</button>' : '') + '</td></tr>').join('') +
-      '</table>';
+  function setsTable(sets, everything) {
+    return '<div class="table-wrap"><table class="sets"><tr><th>Set</th><th>Weight</th><th>Reps</th><th>Est. 1RM</th><th></th></tr>' +
+      sets.map((s, i) => '<tr><td>' + (i + 1) + '</td><td>' + num(s.weight) + ' ' + esc(s.unit || unit()) +
+        (isPR(s, everything) ? '<span class="pr">PR</span>' : '') + '</td><td>' + s.reps + '</td><td class="muted">' + num(e1rm(s.weight, s.reps)) +
+        '</td><td><button class="btn ghost danger small" data-del="' + esc(s.id) + '" data-date="' + esc(s.date) + '" aria-label="Delete set">✕</button></td></tr>').join('') +
+      '</table></div>';
   }
 
   function renderLog() {
-    const date = $('#logDate').value;
+    const date = $('#logDate').value || todayStr();
     $('#todayLabel').textContent = date === todayStr() ? 'Today' : fmtDate(date);
     const sel = $('#exSelect'), cur = sel.value;
     const opts = visibleExercises();
-    sel.innerHTML = opts.map(n => '<option>' + esc(n) + '</option>').join('') +
-      '<option value="' + NEW + '">+ Custom exercise…</option>';
+    sel.innerHTML = opts.map(n => '<option>' + esc(n) + '</option>').join('') + '<option value="' + NEW + '">+ Custom exercise…</option>';
     if (opts.includes(cur) || cur === NEW) sel.value = cur; else prefill();
-    syncCustom();
-    renderLastTime();
-    const day = state.sets.filter(s => s.date === date);
-    if (!day.length) { $('#todayList').innerHTML = '<div class="empty">No sets logged for this day yet.</div>'; return; }
-    const groups = groupBy(day.sort((a, b) => a.t - b.t), s => s.exercise);
-    $('#todayList').innerHTML = [...groups].map(([ex, sets]) => {
+    syncCustom(); renderLastTime();
+    const everything = allSets();
+    const day = everything.filter(s => s.date === date).sort((a, b) => a.t - b.t);
+    if (!day.length) { $('#todayList').innerHTML = '<div class="empty">No sets logged for this day yet. Pick an exercise, enter weight and reps, and tap Add set.</div>'; return; }
+    $('#todayList').innerHTML = [...groupBy(day, s => s.exercise)].map(([ex, sets]) => {
       const vol = sets.reduce((a, s) => a + s.weight * s.reps, 0);
-      return '<div class="card"><div class="row between"><h3>' + esc(ex) + '</h3><span class="muted small">' +
-        sets.length + ' sets · ' + num(vol) + ' ' + state.unit + ' volume</span></div>' + setsTable(sets, true) + '</div>';
+      return '<div class="card"><div class="row between wrap"><h3>' + esc(ex) + '</h3><span class="muted small">' +
+        sets.length + (sets.length === 1 ? ' set · ' : ' sets · ') + num(vol) + ' ' + esc(unit()) + ' volume</span></div>' + setsTable(sets, everything) + '</div>';
     }).join('');
   }
 
   // ---------- rest timer ----------
   let restEnd = 0, restTick;
   document.querySelectorAll('[data-rest]').forEach(b => b.addEventListener('click', () => {
-    state.rest = +b.dataset.rest; save(); renderRestChips();
-    if (!state.rest) stopRest();
+    updateMe({ rest: +b.dataset.rest });
+    if (!+b.dataset.rest) stopRest();
   }));
-  function renderRestChips() { document.querySelectorAll('[data-rest]').forEach(b => b.classList.toggle('on', +b.dataset.rest === state.rest)); }
   function startRest() {
-    if (!state.rest) return;
-    restEnd = Date.now() + state.rest * 1000;
+    if (!restSecs()) return;
+    restEnd = Date.now() + restSecs() * 1000;
     clearInterval(restTick); restTick = setInterval(tickRest, 250); tickRest();
   }
-  function stopRest() { clearInterval(restTick); $('#timer').classList.add('hidden'); }
+  function stopRest() { clearInterval(restTick); $('#timer').hidden = true; }
   function tickRest() {
     const left = Math.max(0, Math.round((restEnd - Date.now()) / 1000));
-    const el = $('#timer'); el.classList.remove('hidden');
+    const el = $('#timer'); el.hidden = false;
     el.textContent = 'Rest ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
     if (left === 0) {
       clearInterval(restTick); el.textContent = 'Rest done';
       try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
-      setTimeout(() => el.classList.add('hidden'), 4000);
+      setTimeout(() => { el.hidden = true; }, 4000);
     }
   }
 
   // ---------- history ----------
   function renderHistory() {
-    if (!state.sets.length) { $('#historyList').innerHTML = '<div class="empty">Your workouts will show up here.</div>'; return; }
-    const byDate = groupBy([...state.sets].sort((a, b) => b.date.localeCompare(a.date) || a.t - b.t), s => s.date);
-    $('#historyList').innerHTML = [...byDate].map(([date, sets]) => {
-      const byEx = groupBy(sets, s => s.exercise);
-      return '<div class="card"><div class="row between"><h2 style="margin:0">' + fmtDate(date) + '</h2>' +
-        '<button class="btn ghost small" data-open="' + date + '">Edit</button></div>' +
-        [...byEx].map(([ex, ss]) => '<div style="margin-top:8px"><b>' + esc(ex) + '</b> <span class="muted">' +
-          ss.map(s => num(s.weight) + '×' + s.reps + (isPR(s) ? '<span class="pr">PR</span>' : '')).join(', ') + '</span></div>').join('') +
-        '</div>';
-    }).join('');
+    const everything = allSets();
+    if (!everything.length) { $('#historyList').innerHTML = '<div class="empty">Your workouts will show up here, one card per day.</div>'; return; }
+    const byDate = groupBy([...everything].sort((a, b) => b.date.localeCompare(a.date) || a.t - b.t), s => s.date);
+    $('#historyList').innerHTML = [...byDate].map(([date, sets]) =>
+      '<div class="card"><div class="row between"><h2 style="margin:0;font-size:20px">' + fmtDate(date) + '</h2>' +
+      '<button class="btn ghost small" data-open="' + esc(date) + '">Edit</button></div>' +
+      [...groupBy(sets, s => s.exercise)].map(([ex, ss]) => '<div style="margin-top:8px"><b>' + esc(ex) + '</b> <span class="muted">' +
+        ss.map(s => num(s.weight) + '×' + s.reps + (isPR(s, everything) ? '<span class="pr">PR</span>' : '')).join(', ') + '</span></div>').join('') +
+      '</div>').join('');
   }
 
   // ---------- progress ----------
@@ -389,117 +539,188 @@
   }));
   function renderProgress() {
     const sel = $('#progEx'), cur = sel.value;
-    const logged = [...new Set(state.sets.map(s => s.exercise))];
-    const names = state.exercises.map(e => e.name).filter(n => logged.includes(n)).concat(logged.filter(n => !state.exercises.some(e => e.name === n)));
+    const everything = allSets();
+    const logged = [...new Set(everything.map(s => s.exercise))];
+    const names = exercises().map(e => e.name).filter(n => logged.includes(n)).concat(logged.filter(n => !exercises().some(e => e.name === n)));
     if (!names.length) {
       sel.innerHTML = ''; $('#progStats').innerHTML = ''; $('#repPRs').innerHTML = '';
       $('#chartWrap').innerHTML = '<div class="empty">Log a few sets to see your progress.</div>'; return;
     }
     sel.innerHTML = names.map(n => '<option>' + esc(n) + '</option>').join('');
     sel.value = names.includes(cur) ? cur : names[0];
-    const sets = setsFor(sel.value);
+    const sets = everything.filter(s => s.exercise === sel.value);
     const best = sets.reduce((m, s) => Math.max(m, e1rm(s.weight, s.reps)), 0);
     const top = sets.reduce((m, s) => Math.max(m, s.weight), 0);
-    const sessions = new Set(sets.map(s => s.date)).size;
     $('#progStats').innerHTML =
       '<div class="stat"><b>' + num(best) + '</b><span>Best est. 1RM</span></div>' +
       '<div class="stat"><b>' + num(top) + '</b><span>Heaviest set</span></div>' +
-      '<div class="stat"><b>' + sessions + '</b><span>Sessions</span></div>';
-
+      '<div class="stat"><b>' + new Set(sets.map(s => s.date)).size + '</b><span>Sessions</span></div>';
     const byDate = [...groupBy(sets, s => s.date)].sort((a, b) => a[0].localeCompare(b[0]));
     const pts = byDate.map(([d, ss]) => ({ d, v:
       metric === 'e1rm' ? Math.max(...ss.map(s => e1rm(s.weight, s.reps))) :
       metric === 'top' ? Math.max(...ss.map(s => s.weight)) :
       ss.reduce((a, s) => a + s.weight * s.reps, 0) }));
     $('#chartWrap').innerHTML = chart(pts);
-
     const byReps = new Map();
     for (const s of sets) { const b = byReps.get(s.reps); if (!b || s.weight > b.weight) byReps.set(s.reps, s); }
-    const rows = [...byReps].sort((a, b) => a[0] - b[0]);
     $('#repPRs').innerHTML = '<table class="sets"><tr><th>Reps</th><th>Best weight</th><th>Date</th></tr>' +
-      rows.map(([r, s]) => '<tr><td>' + r + '</td><td>' + num(s.weight) + ' ' + esc(s.unit || state.unit) + '</td><td class="muted">' + fmtShort(s.date) + '</td></tr>').join('') + '</table>';
+      [...byReps].sort((a, b) => a[0] - b[0]).map(([r, s]) => '<tr><td>' + r + '</td><td>' + num(s.weight) + ' ' + esc(s.unit || unit()) +
+        '</td><td class="muted">' + fmtShort(s.date) + '</td></tr>').join('') + '</table>';
   }
   function chart(pts) {
     if (pts.length < 2) return '<p class="muted small">Log this exercise on at least two days to see a trend line.</p>';
-    const W = 600, H = 200, L = 44, R = 12, T = 12, B = 26;
+    const W = 600, H = 220, L = 48, R = 16, T = 14, B = 28;
     const vs = pts.map(p => p.v); let lo = Math.min(...vs), hi = Math.max(...vs);
     const pad = (hi - lo) * 0.1 || hi * 0.1 || 1; lo = Math.max(0, lo - pad); hi += pad;
     const x = i => L + (W - L - R) * (i / (pts.length - 1));
     const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
     const ticks = [0, 0.5, 1].map(f => lo + (hi - lo) * f);
-    const path = pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+    const area = line + ' L' + x(pts.length - 1).toFixed(1) + ' ' + (H - B) + ' L' + L + ' ' + (H - B) + ' Z';
     const labelIdx = [...new Set([0, Math.floor((pts.length - 1) / 2), pts.length - 1])];
     return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Progress chart">' +
-      ticks.map(t => '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--border)"/>' +
-        '<text x="' + (L - 6) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + Math.round(t) + '</text>').join('') +
-      '<path d="' + path + '" fill="none" stroke="var(--accent)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>' +
-      pts.map((p, i) => '<circle cx="' + x(i) + '" cy="' + y(p.v) + '" r="3.5" fill="var(--accent)"><title>' + fmtShort(p.d) + ': ' + num(p.v) + '</title></circle>').join('') +
-      labelIdx.map(i => '<text x="' + x(i) + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle') + '">' + fmtShort(pts[i].d) + '</text>').join('') +
+      ticks.map(t => '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--border)" fill="none"/>' +
+        '<text x="' + (L - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + Math.round(t) + '</text>').join('') +
+      '<path d="' + area + '" fill="var(--accent)" fill-opacity="0.1" stroke="none"/>' +
+      '<path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2.5"/>' +
+      pts.map((p, i) => '<circle cx="' + x(i) + '" cy="' + y(p.v) + '" r="' + (i === pts.length - 1 ? 5 : 3.5) + '" fill="var(--accent)"><title>' + fmtShort(p.d) + ': ' + num(p.v) + '</title></circle>').join('') +
+      labelIdx.map(i => '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle') + '">' + fmtShort(pts[i].d) + '</text>').join('') +
       '</svg>';
   }
 
-  // ---------- exercises & data ----------
+  // ---------- settings ----------
   function renderSettings() {
-    $('#exChips').innerHTML = state.exercises.map((e, i) =>
-      '<button class="chip ' + (e.hidden ? '' : 'on') + '" data-ex="' + i + '">' + esc(e.name) + '</button>').join('');
+    $('#exChips').innerHTML = exercises().map((e, i) => '<button class="chip ' + (e.hidden ? '' : 'on') + '" data-ex="' + i + '">' + esc(e.name) + '</button>').join('');
+    document.querySelectorAll('[data-unit]').forEach(b => b.classList.toggle('on', b.dataset.unit === unit()));
+    $('#dataNote').textContent = store && store.shared
+      ? 'Your workouts are saved online with this page, so you can open it on any device and pick your name. Export a backup now and then.'
+      : 'Your workouts are saved in this browser only. Export a backup now and then, or to move to another device.';
   }
   $('#exChips').addEventListener('click', e => {
     const b = e.target.closest('[data-ex]'); if (!b) return;
-    const ex = state.exercises[+b.dataset.ex];
-    if (!ex.hidden && visibleExercises().length === 1) { toast('Keep at least one exercise'); return; }
-    ex.hidden = !ex.hidden; save(); renderSettings();
+    const list = exercises().map(x => ({ ...x }));
+    const ex = list[+b.dataset.ex];
+    if (!ex.hidden && list.filter(x => !x.hidden).length === 1) { toast('Keep at least one exercise'); return; }
+    ex.hidden = !ex.hidden; updateMe({ exercises: list });
   });
+  document.querySelectorAll('[data-unit]').forEach(b => b.addEventListener('click', () => updateMe({ unit: b.dataset.unit })));
   function addExercise() {
-    const name = $('#newEx').value.trim(); if (!name) return;
-    if (state.exercises.some(e => e.name.toLowerCase() === name.toLowerCase())) { toast('Already in the list'); return; }
-    state.exercises.push({ name, hidden: false }); $('#newEx').value = ''; save(); renderSettings(); toast('Added ' + name);
+    const name = clean($('#newEx').value).slice(0, 60); if (!name) return;
+    if (exercises().some(e => e.name.toLowerCase() === name.toLowerCase())) { toast('Already in your list'); return; }
+    updateMe({ exercises: [...exercises().map(x => ({ ...x })), { name, hidden: false }] });
+    $('#newEx').value = ''; toast('Added ' + name);
   }
   $('#addEx').addEventListener('click', addExercise);
   $('#newEx').addEventListener('keydown', e => { if (e.key === 'Enter') addExercise(); });
 
-  function download(name, text, type) {
+  let downloads = null;
+  async function download(name, text, type) {
+    if (downloads) {
+      try { await downloads.save({ filename: name, data: new Blob([text], { type }) }); }
+      catch (e) { if (!e || e.code !== 'declined') toast("Couldn't export the file"); }
+      return;
+    }
+    if (window.claude) { toast('Export is not available here'); return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
-  $('#exportJson').addEventListener('click', () => download('lift-log-' + todayStr() + '.json', JSON.stringify(state, null, 2), 'application/json'));
+  const slug = () => me().name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'lifter';
+  const sortedSets = () => allSets().sort((a, b) => a.date.localeCompare(b.date) || a.t - b.t);
+  $('#exportJson').addEventListener('click', () => {
+    const p = me();
+    const out = { app: 'lift-log', version: 2, name: p.name, unit: p.unit, rest: p.rest, exercises: p.exercises, sets: sortedSets() };
+    download('lift-log-' + slug() + '-' + todayStr() + '.json', JSON.stringify(out, null, 2), 'application/json');
+  });
   $('#exportCsv').addEventListener('click', () => {
     const q = v => '"' + String(v).replace(/"/g, '""') + '"';
-    const rows = [['date', 'exercise', 'weight', 'unit', 'reps', 'est_1rm']].concat(
-      [...state.sets].sort((a, b) => a.date.localeCompare(b.date) || a.t - b.t)
-        .map(s => [s.date, s.exercise, s.weight, s.unit || state.unit, s.reps, Math.round(e1rm(s.weight, s.reps) * 10) / 10]));
-    download('lift-log-' + todayStr() + '.csv', rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
+    const rows = [['lifter', 'date', 'exercise', 'weight', 'unit', 'reps', 'est_1rm']].concat(
+      sortedSets().map(s => [me().name, s.date, s.exercise, s.weight, s.unit || unit(), s.reps, Math.round(e1rm(s.weight, s.reps) * 10) / 10]));
+    download('lift-log-' + slug() + '-' + todayStr() + '.csv', rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
   });
+  // Import merges a backup's sets into the current lifter's log; sets already there are skipped.
   $('#importFile').addEventListener('change', async e => {
-    const f = e.target.files[0]; if (!f) return;
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f || !me()) return;
+    let incoming;
     try {
       const data = JSON.parse(await f.text());
-      if (!Array.isArray(data.sets) || !Array.isArray(data.exercises)) throw 0;
-      if (!confirm('Replace current data with ' + data.sets.length + ' sets from this backup?')) return;
-      state = { ...blank(), ...data }; save(); render(); toast('Backup imported');
-    } catch (err) { toast('That file is not a Lift Log backup'); }
-    e.target.value = '';
+      if (!Array.isArray(data.sets)) throw 0;
+      incoming = data.sets.filter(s => s && isDate(s.date) && typeof s.exercise === 'string' && +s.weight >= 0 && +s.reps >= 1)
+        .map(s => ({ id: String(s.id || uid()), date: s.date, exercise: clean(s.exercise).slice(0, 60), weight: +s.weight, reps: Math.round(+s.reps), unit: s.unit === 'kg' ? 'kg' : 'lb', t: +s.t || Date.now() }));
+      const list = exercises().map(x => ({ ...x }));
+      const extra = (Array.isArray(data.exercises) ? data.exercises : []).filter(x => x && typeof x.name === 'string').map(x => ({ name: clean(x.name).slice(0, 60), hidden: !!x.hidden }));
+      for (const x of [...extra, ...incoming.map(s => ({ name: s.exercise, hidden: false }))])
+        if (x.name && !list.some(y => y.name.toLowerCase() === x.name.toLowerCase())) list.push(x);
+      if (list.length !== exercises().length) updateMe({ exercises: list });
+    } catch (err) { toast("That file isn't a Lift Log backup"); return; }
+    let added = 0;
+    const byDate = groupBy(incoming, s => s.date);
+    for (const [date, ss] of byDate) {
+      const have = new Set((days[date] || []).map(s => s.id));
+      const fresh = ss.filter(s => !have.has(s.id)).map(({ date, ...rest }) => rest);
+      if (!fresh.length) continue;
+      try { await writeDay(date, [...(days[date] || []), ...fresh].sort((a, b) => a.t - b.t)); added += fresh.length; } catch (err) { return; }
+    }
+    const last = [...byDate.keys()].sort().pop();
+    if (last && (!me().lastDate || last > me().lastDate)) updateMe({ lastDate: last });
+    toast(added ? 'Imported ' + added + ' sets into ' + me().name + "'s log" : 'Nothing new to import');
   });
 
   // ---------- shared clicks ----------
   document.addEventListener('click', e => {
     const del = e.target.closest('[data-del]');
-    if (del) deleteSet(del.dataset.del);
+    if (del) deleteSet(del.dataset.date, del.dataset.del);
     const open = e.target.closest('[data-open]');
     if (open) { $('#logDate').value = open.dataset.open; show('log'); }
+    const person = e.target.closest('[data-person]');
+    if (person) selectPerson(person.dataset.person);
   });
 
   function render() {
-    $('#unitBtn').textContent = state.unit;
-    document.querySelectorAll('.u').forEach(el => el.textContent = state.unit);
-    renderRestChips();
+    const p = me();
+    $('#whoBtn').hidden = !p;
+    if (p) { $('#whoName').textContent = p.name; $('#whoAvatar').textContent = initials(p.name); }
+    document.querySelectorAll('.u').forEach(el => el.textContent = unit());
+    document.querySelectorAll('[data-rest]').forEach(b => b.classList.toggle('on', +b.dataset.rest === restSecs()));
+    if (view === 'who') renderWho();
     if (view === 'log') renderLog();
     if (view === 'history') renderHistory();
     if (view === 'progress') renderProgress();
     if (view === 'settings') renderSettings();
   }
-  render(); prefill(); renderLastTime();
+
+  // ---------- start ----------
+  async function start() {
+    show('who');
+    let db = null;
+    if (window.claude && claude.use) {
+      try { db = await claude.use('db'); } catch (e) {}
+      try { downloads = await claude.use('downloads'); } catch (e) {}
+    }
+    store = db ? dbStore(db) : localStore();
+    $('#storeNote').textContent = store.shared
+      ? 'Everyone who opens this page sees the same list of names. Each person’s workouts are kept separately under their name.'
+      : 'Saved in this browser only. Open the shared link while signed in to claude.ai to keep workouts across devices.';
+    const slow = setTimeout(() => {
+      if (!profilesLoaded) { $('#loading').hidden = false; $('#loading').textContent = "Still connecting. Names will appear once the connection is back."; }
+    }, 10000);
+    let autoTried = false;
+    store.subscribeProfiles((ps, fromCache) => {
+      profiles = ps;
+      if (!fromCache) { profilesLoaded = true; clearTimeout(slow); }
+      if (!pid && !autoTried) {
+        const last = lsGet(LAST_PERSON_KEY);
+        if (last && profiles[last]) { autoTried = true; selectPerson(last); return; }
+        if (profilesLoaded) autoTried = true;
+      }
+      if (pid && !profiles[pid] && profilesLoaded) { pid = null; $('#nav').classList.add('locked'); show('who'); return; }
+      render();
+    }, () => {
+      clearTimeout(slow); profilesLoaded = true;
+      $('#loading').hidden = false; $('#loading').textContent = "Couldn't load the list of names. Reopen the page to try again.";
+    });
+  }
+  start();
 })();
 </script>
-</body>
-</html>
