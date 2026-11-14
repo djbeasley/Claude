@@ -2,7 +2,7 @@
 
 A simple, offline strength-training tracker. Open `index.html` in any browser (phone or desktop) — no install, no account.
 
-- **Log** sets (weight × reps) for 30 common lifts, plus your own custom exercises
+- **Log** sets (weight × reps) for 30 common lifts — or pick "+ Custom exercise…", type a name, and log it; it joins your exercise list automatically
 - See what you lifted **last time** and get weights pre-filled
 - Automatic **PR** detection per rep count and an estimated 1RM (Epley)
 - **History** by day, **Progress** chart (est. 1RM, top weight, or volume), and rep records

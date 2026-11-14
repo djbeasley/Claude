@@ -97,6 +97,11 @@
       </div>
       <label for="exSelect">Exercise</label>
       <select id="exSelect"></select>
+      <div id="customWrap" class="hidden" style="margin-top:8px">
+        <label for="customEx">Custom exercise name</label>
+        <input id="customEx" placeholder="e.g. Goblet Squat" autocomplete="off">
+        <p class="muted small" style="margin:6px 0 0">It's added to your exercise list when you log its first set.</p>
+      </div>
       <p id="lastTime" class="muted small" style="margin:8px 0 0"></p>
       <div class="grid3" style="margin-top:12px">
         <div><label for="wIn">Weight (<span class="u">lb</span>)</label>
@@ -242,7 +247,21 @@
   // ---------- log ----------
   $('#logDate').value = todayStr();
   $('#logDate').addEventListener('change', render);
-  $('#exSelect').addEventListener('change', () => { prefill(); renderLastTime(); });
+  const NEW = '__new__';
+  $('#exSelect').addEventListener('change', () => {
+    syncCustom(); prefill(); renderLastTime();
+    if ($('#exSelect').value === NEW) $('#customEx').focus();
+  });
+  function syncCustom() { $('#customWrap').classList.toggle('hidden', $('#exSelect').value !== NEW); }
+  $('#customEx').addEventListener('keydown', e => { if (e.key === 'Enter') $('#wIn').focus(); });
+  // Name for the set being logged: the picked exercise, or the typed custom one (matching an existing name if it already exists).
+  function chosenExercise() {
+    if ($('#exSelect').value !== NEW) return $('#exSelect').value;
+    const typed = $('#customEx').value.trim().replace(/\s+/g, ' ');
+    if (!typed) return '';
+    const existing = state.exercises.find(e => e.name.toLowerCase() === typed.toLowerCase());
+    return existing ? existing.name : typed;
+  }
   function prefill() {
     const prev = setsFor($('#exSelect').value).sort((a, b) => b.date.localeCompare(a.date) || b.t - a.t)[0];
     $('#wIn').value = prev ? prev.weight : '';
@@ -250,6 +269,7 @@
   }
   function renderLastTime() {
     const ex = $('#exSelect').value, date = $('#logDate').value;
+    if (ex === NEW) { $('#lastTime').textContent = ''; return; }
     const earlier = setsFor(ex).filter(s => s.date < date);
     if (!earlier.length) { $('#lastTime').textContent = 'No earlier sessions for this exercise.'; return; }
     const last = earlier.reduce((m, s) => s.date > m ? s.date : m, '');
@@ -258,10 +278,20 @@
   }
   function addSet() {
     const w = parseFloat($('#wIn').value), r = parseInt($('#rIn').value, 10);
+    const ex = chosenExercise();
+    if (!ex) { toast('Enter a name for your custom exercise'); $('#customEx').focus(); return; }
     if (!(w >= 0) || !(r >= 1)) { toast('Enter a weight and at least 1 rep'); return; }
-    const set = { id: uid(), date: $('#logDate').value || todayStr(), exercise: $('#exSelect').value, weight: w, reps: r, unit: state.unit, t: Date.now() };
+    const known = state.exercises.find(e => e.name === ex);
+    if (!known) state.exercises.push({ name: ex, hidden: false });
+    else known.hidden = false;
+    if ($('#exSelect').value === NEW) {
+      $('#customEx').value = '';
+      render(); $('#exSelect').value = ex; syncCustom();
+    }
+    const set = { id: uid(), date: $('#logDate').value || todayStr(), exercise: ex, weight: w, reps: r, unit: state.unit, t: Date.now() };
     state.sets.push(set); save();
-    if (isPR(set) && setsFor(set.exercise).length > 1) toast('New ' + r + '-rep record! 🎉'); else toast('Set added');
+    if (!known) toast('Set added — ' + ex + ' saved to your exercises');
+    else if (isPR(set) && setsFor(set.exercise).length > 1) toast('New ' + r + '-rep record! 🎉'); else toast('Set added');
     startRest(); render();
   }
   $('#addSet').addEventListener('click', addSet);
@@ -296,8 +326,10 @@
     $('#todayLabel').textContent = date === todayStr() ? 'Today' : fmtDate(date);
     const sel = $('#exSelect'), cur = sel.value;
     const opts = visibleExercises();
-    sel.innerHTML = opts.map(n => '<option>' + esc(n) + '</option>').join('');
-    if (opts.includes(cur)) sel.value = cur; else prefill();
+    sel.innerHTML = opts.map(n => '<option>' + esc(n) + '</option>').join('') +
+      '<option value="' + NEW + '">+ Custom exercise…</option>';
+    if (opts.includes(cur) || cur === NEW) sel.value = cur; else prefill();
+    syncCustom();
     renderLastTime();
     const day = state.sets.filter(s => s.date === date);
     if (!day.length) { $('#todayList').innerHTML = '<div class="empty">No sets logged for this day yet.</div>'; return; }
