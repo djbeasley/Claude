@@ -1,15 +1,11 @@
 # Lift Log
 
-A strength-training tracker for several people. Each person picks their name (no password) and logs their own sets.
+A strength-training tracker in one file: `LiftLog.html`. No install, no account, no internet needed after it opens.
 
-**Published version:** https://claude.ai/artifact/CjbMhm1MHet5w4VHqMXmLQ. Workouts are saved online with the page, so they show up on any device. People need edit access from the page's Share menu to log sets.
+To use it, open `LiftLog.html` in a web browser. To give it to someone, send them the file.
 
-**Local version:** open `index.html` directly in a browser. Data stays in that browser only.
-
-- **Who's lifting?** screen: pick your name or add a new one. The app remembers your last pick on each device.
-- **Log** sets (weight × reps) for 30 common lifts, or pick "+ Custom exercise…", type a name, and it's added to your list
-- Shows what you lifted **last time** and pre-fills the weight
-- Automatic **PR** detection per rep count, plus an estimated 1RM (Epley formula)
-- **History** by day, **Progress** chart (est. 1RM, top weight, or volume), and a rep-records table
-- Rest timer, lb/kg setting, and custom exercise list for each person
-- Export a JSON backup or CSV; import a backup to merge it into the current person's log
+- **Who's lifting?** screen: several people can share one device. Each person picks or adds their name and gets their own log.
+- **Log** sets (weight × reps) for 30 common lifts, or pick "+ Custom exercise…" and type a name; it's added to your list automatically.
+- Shows what you lifted **last time**, marks **PRs** for each rep count, and estimates your 1RM (Epley formula).
+- **History** by day, **Progress** chart, rep records, rest timer, lb/kg setting.
+- Data is saved **on that device, in that browser only**. Use Export backup / Import backup to move a log to another device.
